@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0f172a"><title>الحمد برنت | كشف العملاء والفواتير (للعرض فقط)</title>
+<style>
+:root{font-family:system-ui,'Segoe UI',Tahoma,sans-serif;color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#0b1222;color:#e5edf7;line-height:1.65}header{background:#13223b;position:sticky;top:0;z-index:2;border-bottom:1px solid #314463;padding:12px 14px}h1{font-size:19px;margin:0;color:#f5ca62}h2{font-size:19px;margin:6px 0 12px}p{margin:5px 0 12px}.sub{font-size:12px;color:#b6c6d9}.wrap{max-width:850px;margin:auto;padding:16px}.panel{background:#16253e;border:1px solid #364963;border-radius:17px;padding:17px;margin-bottom:14px}.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.between{justify-content:space-between}.hide{display:none!important}label{display:block;color:#d2ddea;margin:5px 0}input,button{font:inherit;min-height:43px;border-radius:10px}input{width:100%;color:#fff;background:#0d192c;border:1px solid #51657e;padding:8px 12px}button{background:#e4b753;color:#101c2c;border:0;padding:7px 14px;font-weight:700;cursor:pointer}button.secondary{background:#29435e;color:#fff;border:1px solid #506a85}button.danger{background:#5e293b;color:#fff}.grow{flex:1}.list{display:grid;gap:8px;max-height:60vh;overflow:auto}.entry{border:1px solid #3b5270;background:#14233a;border-radius:12px;padding:11px 12px;text-align:right;color:#fff;cursor:pointer;width:100%;font-weight:400}.entry:focus{outline:2px solid #e4b753}.badge{border-radius:10px;background:#1e4960;padding:3px 9px;font-size:12px}.num{direction:ltr;unicode-bidi:embed;font-variant-numeric:tabular-nums;font-weight:700}.money{color:#f4cd72;font-weight:700}.credit{color:#89e5b2}.debit{color:#ffc0c0}table{width:100%;border-collapse:collapse;font-size:13px}th,td{border-bottom:1px solid #334962;text-align:right;padding:8px 4px;vertical-align:top}th{color:#a9bdcf}small{color:#9eafc5}.scroll{overflow:auto}.warning{border-right:4px solid #dfad57;padding-right:10px;color:#efcc82;font-size:12px}.stat{flex:1;min-width:130px;background:#0c1b2d;padding:12px;border-radius:12px}summary{cursor:pointer}#message{color:#ffdc89}#alert{position:fixed;bottom:12px;left:12px;right:12px;background:#30445f;padding:9px 13px;border-radius:12px;z-index:5;font-size:13px}
+</style></head><body>
+<header><div class="row between"><div><h1>الحمد برنت</h1><div class="sub">دليل العملاء والفواتير — قراءة فقط</div></div><span class="badge">لا تعديل أو حذف</span></div></header>
+<main class="wrap">
+ <section id="pairPanel" class="panel hide"><h2>ربط الهاتف بالمطبعة</h2><p>وصّل الهاتف بشبكة المطبعة، وافتح «ربط الموبايل» على الكمبيوتر، ثم أدخل رمز الربط.</p><form id="pairForm"><label for="code">رمز الربط</label><input id="code" maxlength="8" autocomplete="one-time-code" required placeholder="A1B2C3D4"><button type="submit" style="margin-top:10px">ربط وتحميل البيانات</button></form><p class="warning">الاتصال المحلي HTTP غير مشفر. استخدم شبكة واي فاي موثوقة فقط، ولا تعرض عنوان المطبعة على الإنترنت.</p></section>
+ <section id="topPanel" class="panel hide"><div class="row between"><div><strong id="syncStatus">بيانات محفوظة</strong><div class="sub" id="syncTime"></div></div><div class="row"><button id="refresh" type="button">تحديث الآن</button><button id="offline" type="button" class="secondary">حفظ نسخة تعمل دون إنترنت</button></div></div><p class="warning">تتحدث البيانات تلقائيًا أثناء اتصالك بكمبيوتر المطبعة. للاستعلام خارج المطبعة، قم بحفظ ملف HTML مشفر بعد التحديث وافتحه لاحقًا. ملف الأوفلاين مُشفر بكلمة مرور مستقلة؛ لا تفقدها، واحفظه على هاتف مؤمّن.</p><div class="row"><button id="clear" class="danger" type="button">مسح بيانات العرض الحالية والنسخ المؤقتة</button></div></section>
+ <section id="unlockOffline" class="panel hide"><h2>فتح النسخة المحفوظة دون إنترنت</h2><p>هذه النسخة مشفرة بكلمة مرور وضعتها عند تحميل الملف من المطبعة.</p><form id="offlineUnlockForm"><label for="offlinePassword">كلمة المرور</label><input id="offlinePassword" type="password" autocomplete="off" required minlength="12"><button type="submit" style="margin-top:10px">فتح نسخة العملاء والفواتير</button></form><p id="offlineError" class="warning"></p></section>
+ <section id="browser" class="hide"><div class="panel"><h2>البحث عن عميل</h2><input id="search" aria-label="ابحث بالاسم أو التليفون" placeholder="اسم العميل أو رقم الهاتف"><p class="sub" id="count"></p><div id="clients" class="list"></div></div><section id="details" class="panel hide"><button type="button" id="back" class="secondary">رجوع للعملاء</button><h2 id="clientName"></h2><div class="sub" id="clientPhone"></div><div class="row" id="stats"></div><h2>الفواتير</h2><div class="scroll"><table><thead><tr><th>الفاتورة</th><th>التاريخ</th><th>الإجمالي</th><th>المدفوع</th><th>المتبقي</th><th>الحالة</th></tr></thead><tbody id="invoices"></tbody></table></div><h2>الحركات وكشف الحساب</h2><div class="scroll"><table><thead><tr><th>التاريخ</th><th>البيان</th><th>مدين (+)</th><th>دائن (-)</th></tr></thead><tbody id="ledger"></tbody></table></div><p class="sub">الرصيد = رصيد أول المدة + الفواتير غير المسددة − التحصيلات المستقلة + التسويات والخدمات. بعض الدفعات مرتبطة بالفاتورة نفسها ولا تُحسب مرتين.</p></section></section>
+ <section class="panel" id="empty"><h2>بيانات المطبعة</h2><p id="message">جارٍ البحث عن نسخة محفوظة…</p></section>
+</main><div id="alert" class="hide" role="status"></div>
+<script id="offline-data" type="application/json"></script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id),hide=(id,on)=>$(id).classList.toggle('hide',!on),esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money=v=>Number(Number(v||0).toFixed(2)).toLocaleString('ar-EG',{minimumFractionDigits:2,maximumFractionDigits:2});
+let data=null,offline=false,busy=false,lastAlert='';
+function alertMsg(t){if(t===lastAlert)return;lastAlert=t;$('alert').textContent=t;hide('alert',true);setTimeout(()=>hide('alert',false),6500);}
+function cache(){return new Promise((resolve,reject)=>{const req=indexedDB.open('alhamd-mobile-readonly-v1',1);req.onupgradeneeded=()=>{req.result.createObjectStore('snapshots');};req.onerror=()=>reject(req.error);req.onsuccess=()=>resolve(req.result);});}
+async function readCache(){try{const db=await cache();return await new Promise((resolve,reject)=>{const tx=db.transaction('snapshots','readonly');const q=tx.objectStore('snapshots').get('latest');q.onsuccess=()=>resolve(q.result||null);q.onerror=()=>reject(q.error);});}catch{return null;}}
+async function storeCache(v){try{const db=await cache();await new Promise((resolve,reject)=>{const t=db.transaction('snapshots','readwrite');t.objectStore('snapshots').put(v,'latest');t.oncomplete=resolve;t.onerror=()=>reject(t.error);});return true;}catch{alertMsg('مساحة الهاتف لا تكفي لتخزين النسخة. احفظ ملفًا دون إنترنت بدلًا من ذلك.');return false;}}
+async function deleteCache(){try{const db=await cache();await new Promise((res,rej)=>{const t=db.transaction('snapshots','readwrite');t.objectStore('snapshots').delete('latest');t.oncomplete=res;t.onerror=()=>rej(t.error);});}catch{}}
+const formatDate=s=>{try{return new Date(s).toLocaleString('ar-EG')}catch{return String(s||'—')}};
+function show(){if(!data)return;hide('empty',false);hide('topPanel',true);hide('browser',true);hide('pairPanel',false);$('syncStatus').textContent=offline?'نسخة مستقلة بدون اتصال':'عرض فقط — آخر نسخة تم تحميلها';$('syncTime').textContent='آخر تحديث: '+formatDate(data.syncedAt)+(offline?' | ملف محفوظ':'');renderClients();}
+function renderClients(){const q=$('search').value.trim().toLowerCase();const matches=(data.clients||[]).filter(c=>[c.name,c.phone,c.phone2].some(v=>String(v||'').toLowerCase().includes(q))).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ar'));$('count').textContent=matches.length+' عميل';$('clients').innerHTML=matches.length?matches.map(c=>`<button type="button" class="entry" data-client="${esc(c.id)}"><strong>${esc(c.name||'عميل')}</strong><div class="sub">${esc(c.phone||'')}</div></button>`).join(''):'لا توجد نتائج';$('clients').querySelectorAll('[data-client]').forEach(b=>b.onclick=()=>showClient(b.dataset.client));hide('details',false);}
+function showClient(id){const c=(data.clients||[]).find(x=>String(x.id)===String(id));if(!c)return;const orders=(data.orders||[]).filter(o=>String(o.clientId)===String(id)),tx=(data.treasury||[]).filter(t=>String(t.clientId)===String(id)&&t.type==='collection'&&t.kind!=='deposit'&&!String(t.desc||'').startsWith('عربون أمر شغل #'));const adjustments=(data.adjustments||[]).filter(a=>String(a.partyId)===String(id));const services=(data.services||[]).filter(v=>String(v.partyId)===String(id));let balance=Number(c.initialBalance||0);
+ const rows=[{date:'',text:'رصيد أول المدة',debit:balance>0?balance:0,credit:balance<0?-balance:0}];
+ orders.forEach(o=>{const diff=Number(o.total||0)-Number(o.paid||0);balance+=diff;rows.push({date:o.date,text:'فاتورة #'+(o.orderNo||o.id)+(o.jobType?' — '+o.jobType:''),debit:diff>0?diff:0,credit:diff<0?-diff:0});});
+ tx.forEach(t=>{const val=Number(t.inAmount||0);balance-=val;rows.push({date:t.date,text:t.desc||'تحصيل عميل',credit:val,debit:0});});
+ adjustments.forEach(a=>{const d=Number(a.debit||0),cr=Number(a.credit||0);balance+=d-cr;rows.push({date:a.date,text:a.desc||a.note||'تسوية رصيد',debit:d,credit:cr});});
+ services.forEach(v=>{const val=(v.kind==='provided'?1:-1)*(Number(v.amount||0)-Number(v.paid||0));balance+=val;rows.push({date:v.date,text:v.desc||v.name||'خدمة',debit:val>0?val:0,credit:val<0?-val:0});});
+ $('clientName').textContent=c.name||'عميل';$('clientPhone').textContent=c.phone||'';
+ $('stats').innerHTML=`<div class="stat"><small>عدد الفواتير</small><div class="num">${orders.length}</div></div><div class="stat"><small>الرصيد المستحق</small><div class="money num">${money(balance)}</div><small>${balance<0?'رصيد لصالح العميل':'مستحق على العميل'}</small></div>`;
+ $('invoices').innerHTML=orders.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))).map(o=>`<tr><td>${esc(o.orderNo||o.id)}<div class="sub">${esc(o.jobType||'')}</div></td><td>${esc(o.date)}</td><td class="num">${money(o.total)}</td><td class="num credit">${money(o.paid)}</td><td class="num">${money(Number(o.total||0)-Number(o.paid||0))}</td><td>${esc(o.status||'')}</td></tr>`).join('')||'<tr><td colspan="6">لا توجد فواتير</td></tr>';
+ $('ledger').innerHTML=rows.sort((a,b)=>String(a.date||'').localeCompare(String(b.date||''))).map(r=>`<tr><td>${esc(r.date||'—')}</td><td>${esc(r.text)}</td><td class="num debit">${r.debit?money(r.debit):'—'}</td><td class="num credit">${r.credit?money(r.credit):'—'}</td></tr>`).join('');hide('details',true);$('details').scrollIntoView({behavior:'smooth',block:'start'});}
+async function sync(){if(offline||busy)return;busy=true;$('refresh').disabled=true;try{const r=await fetch('/api/state?since='+(data?.revision??-1),{cache:'no-store',credentials:'same-origin'});if(r.status===401){hide('pairPanel',true);if(data)alertMsg('الاتصال يحتاج إعادة ربط — النسخة المحلية متاحة.');return;}if(!r.ok)throw Error('الكمبيوتر غير متاح');const d=await r.json();if(d.changed){data=d;show();alertMsg('تم تحديث بيانات العملاء والفواتير من الكمبيوتر.');}else{$('syncStatus').textContent='متصل — البيانات محدثة';}}catch{if(data){$('syncStatus').textContent='غير متصل — آخر نسخة متاحة';}else $('message').textContent='افتح الصفحة وأنت على شبكة المطبعة لربط الهاتف.';}finally{busy=false;$('refresh').disabled=false;}}
+$('pairForm').onsubmit=async e=>{e.preventDefault();try{const r=await fetch('/api/pair',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({code:$('code').value.trim().toUpperCase(),name:navigator.userAgent.includes('Android')?'Android':'هاتف'})});const p=await r.json();if(!r.ok)throw Error(p.error||'فشل الربط');hide('pairPanel',false);await sync();}catch(err){alertMsg(err.message);}};
+$('refresh').onclick=()=>sync();$('search').oninput=renderClients;$('back').onclick=()=>{hide('details',false);$('clients').scrollIntoView({behavior:'smooth'});};
+$('clear').onclick=async()=>{if(!confirm('حذف النسخة المحفوظة داخل المتصفح؟ لن يؤثر ذلك على كمبيوتر المطبعة أو أي ملف HTML حفظته سابقًا.'))return;await deleteCache();data=null;hide('browser',false);hide('topPanel',false);hide('empty',true);$('message').textContent='تم مسح البيانات من المتصفح. يمكنك إعادة تحميلها عند الاتصال بالمطبعة.';};
+$('offline').onclick=async()=>{
+ if(!data)return;
+ const secret=prompt('أدخل كلمة مرور قوية لنسخة الهاتف (12 رمزاً على الأقل). احفظها؛ لن تُخزن في البرنامج.');
+ if(secret===null)return;
+ if(secret.length<12)return alertMsg('استخدم كلمة مرور لا تقل عن 12 رمزاً.');
+ try{
+  const res=await fetch('/api/offline-export',{method:'POST',headers:{'Content-Type':'application/json'},credentials:'same-origin',body:JSON.stringify({passphrase:secret})});
+  const sealed=await res.json();if(!res.ok)throw Error(sealed.error||'تعذر تشفير النسخة');
+  // Use the fresh blank application shell: cloning the populated DOM could leak customer data into an otherwise encrypted file.
+  const shellResponse=await fetch('/mobile',{cache:'no-store'});
+  if(!shellResponse.ok)throw Error('تعذر تحميل واجهة الأوفلاين');
+  const blank=await shellResponse.text();
+  const placeholder='<script id="offline-data" type="application/json"></'+'script>';
+  if(!blank.includes(placeholder))throw Error('قالب نسخة الهاتف غير صالح');
+  const embedded=JSON.stringify(sealed).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026');
+  const html=blank.replace(placeholder,'<script id="offline-data" type="application/json">'+embedded+'</'+'script>');
+  const a=document.createElement('a'),u=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  a.href=u;a.download='Alhamd-Offline-Encrypted-'+new Date().toISOString().slice(0,10)+'.html';a.click();setTimeout(()=>URL.revokeObjectURL(u),5000);
+  alertMsg('تم تنزيل ملف أوفلاين مشفر. احتفظ بكلمة المرور خارج الهاتف وافتح الملف لاحقاً بدون اتصال.');
+ }catch(e){alertMsg(e.message||'تعذر تنزيل النسخة المشفرة');}
+};
+function bytes64(str){return Uint8Array.from(atob(str),c=>c.charCodeAt(0));}
+async function decryptOffline(sealed,secret){
+ if(!window.crypto?.subtle)throw Error('متصفح الملفات على هذا الهاتف لا يدعم فك التشفير. افتح الملف باستخدام متصفح Chrome حديث.');
+ const salt=bytes64(sealed.salt),iv=bytes64(sealed.iv),bytes=bytes64(sealed.ciphertext);
+ const material=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),'PBKDF2',false,['deriveKey']);
+ const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:sealed.iterations,hash:'SHA-256'},material,{name:'AES-GCM',length:256},false,['decrypt']);
+ const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv},key,bytes);
+ return JSON.parse(new TextDecoder().decode(plain));
+}
+$('offlineUnlockForm').onsubmit=async e=>{
+ e.preventDefault();const sealed=window.__offlineSealed;
+ try{data=await decryptOffline(sealed,$('offlinePassword').value);$('offlinePassword').value='';offline=true;hide('unlockOffline',false);show();}
+ catch(e){$('offlineError').textContent='تعذر فتح النسخة. تحقق من كلمة المرور، أو جرّب متصفح Chrome حديثاً.';}
+};
+
+(async()=>{try{const embedded=$('offline-data').textContent.trim();if(embedded){const parsed=JSON.parse(embedded);if(parsed.magic==='ALHAMD-MOBILE-SEALED-1'){window.__offlineSealed=parsed;offline=true;hide('unlockOffline',true);hide('empty',false);return;}throw Error('ملف أوفلاين غير صالح');}}catch{}data=null;await deleteCache();$('message').textContent='اتصل بالكمبيوتر لتحميل البيانات، ثم احفظ ملف HTML مشفر للاطلاع دون إنترنت.';await sync();if(!data)hide('pairPanel',true);setInterval(()=>{if(!document.hidden)sync();},15000);})();
+</script></body></html>
