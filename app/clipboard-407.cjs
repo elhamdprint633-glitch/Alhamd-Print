@@ -1,0 +1,4 @@
+'use strict';
+async function readImage(clipboard,nativeImage){if(typeof clipboard.readImage==='function')return clipboard.readImage();for(const item of await clipboard.read())if(item.types.includes('image/png')){const blob=await item.getType('image/png');return nativeImage.createFromBuffer(Buffer.from(await blob.arrayBuffer()));}return nativeImage.createEmpty();}
+async function writeImage(clipboard,nativeImage,ClipboardItem,image){if(image.isEmpty())throw Error('الصورة فارغة');if(typeof clipboard.writeImage==='function')clipboard.writeImage(image);else await clipboard.write([new ClipboardItem({'image/png':new Blob([image.toPNG()],{type:'image/png'})})]);const actual=await readImage(clipboard,nativeImage);if(actual.isEmpty()||actual.getSize().width!==image.getSize().width||actual.getSize().height!==image.getSize().height)throw Error('تعذر التحقق من نسخ الصورة إلى الحافظة');return true;}
+module.exports={writeImage,readImage};

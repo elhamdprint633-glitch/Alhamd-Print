@@ -1,0 +1,84 @@
+'use strict';
+const http=require('node:http');
+const fs=require('node:fs');
+const path=require('node:path');
+const os=require('node:os');
+const crypto=require('node:crypto');
+const {project}=require('./mobile-projection.cjs');
+const {projectViewer}=require('./viewer-projection-403.cjs');
+
+const PORT=47821,MAX_BODY=300*1024*1024;
+const TYPES={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.webmanifest':'application/manifest+json; charset=utf-8','.png':'image/png','.svg':'image/svg+xml','.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf','.otf':'font/otf'};
+function isPrivateAddress(value){let ip=String(value||'').replace(/^::ffff:/,'');return ip==='127.0.0.1'||ip==='::1'||ip.startsWith('10.')||ip.startsWith('192.168.')||ip.startsWith('169.254.')||/^172\.(1[6-9]|2\d|3[01])\./.test(ip)||/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(ip);}
+function getLanAddresses(){const out=[];try{for(const [name,rows]of Object.entries(os.networkInterfaces()))for(const row of rows||[])if((row.family==='IPv4'||row.family===4)&&!row.internal&&row.address&&!row.address.startsWith('169.254.')){const ip=row.address,local=/^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(ip),tail=/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(ip),virtual=/docker|vethernet|virtual|vmware|wsl|hyper-v/i.test(name);out.push({ip,rank:(local?0:tail?10:30)+(virtual?20:0)});}}catch{}out.sort((a,b)=>a.rank-b.rank||a.ip.localeCompare(b.ip));if(!out.length){try{const h=os.hostname();if(h)out.push({ip:h});}catch{}out.push({ip:'127.0.0.1'});}return [...new Set(out.map(x=>x.ip))];}
+
+function safeEqual(a,b){const x=Buffer.from(String(a)),y=Buffer.from(String(b));return x.length===y.length&&crypto.timingSafeEqual(x,y);}
+class LanSyncServer{
+ constructor({appDir,dataDir,store,onCommit,verifyPin,port=PORT}){this.appDir=appDir;this.dataDir=dataDir;this.store=store;this.onCommit=onCommit;this.verifyPin=verifyPin;this.port=port;this.file=path.join(dataDir,'lan-devices.json');this.devices=this.readDevices();this.server=null;this.pairCode='';this.pairUntil=0;this.failedPairs=new Map();this.viewerCache=null;this.workspace660=new (require('./mobile-workspace-660.cjs').MobileWorkspace660)(this);this.tls660=null;this.tlsPair660={code:'',until:0};this.lastDevicesPersisted=0;this.live610=new Map();this.settingsFile610=path.join(dataDir,'lan-settings610.json');try{this.settings610=JSON.parse(fs.readFileSync(this.settingsFile610,'utf8'));}catch{this.settings610={autoStart:this.devices.length>0};}const identityFile=path.join(dataDir,'viewer-server-id412');try{this.serverId=fs.readFileSync(identityFile,'utf8').trim();}catch{this.serverId=crypto.randomUUID();fs.writeFileSync(identityFile,this.serverId,{mode:0o600});}if(!/^[0-9a-f-]{36}$/i.test(this.serverId))throw Error('معرّف ربط الكمبيوتر غير صالح');}
+ secureInfo660(includeCode=false){if(includeCode&&this.tls660?.listening&&this.tlsPair660.until<=Date.now())this.tlsPair660={code:crypto.randomBytes(12).toString('hex').toUpperCase(),until:Date.now()+600000};return {running:!!this.tls660?.listening,port:47822,fingerprint:this.identity660?.fingerprint||'',pairCode:includeCode?this.tlsPair660.code:'',pairExpiresAt:includeCode?this.tlsPair660.until:0,addresses:getLanAddresses().map(ip=>'https://'+ip+':47822')};}
+ async startLocalTLS660(safeStorage){if(this.tls660?.listening)return this.secureInfo660(true);this.identity660=require('./direct-mobile-identity412.cjs').identity(this.dataDir,safeStorage);this.tlsPair660={code:crypto.randomBytes(12).toString('hex').toUpperCase(),until:Date.now()+600000};this.tls660=require('node:https').createServer({key:this.identity660.key,cert:this.identity660.cert,minVersion:'TLSv1.2'},(req,res)=>{if(!isPrivateAddress(req.socket.remoteAddress)){this.json(res,403,{error:'الاتصال المحلي المشفر متاح للشبكة الخاصة فقط'});return;}this.route(req,res,{remoteTLS:true,localTLS:true,internalPort:47822,allowedHosts:new Set(['127.0.0.1:47822',...getLanAddresses().map(ip=>ip+':47822')]),pair:this.tlsPair660,consume:()=>{this.tlsPair660={code:'',until:0};}});});this.tls660.maxConnections=40;this.tls660.headersTimeout=5000;this.tls660.requestTimeout=60000;this.tls660.keepAliveTimeout=3000;this.tls660.on('tlsClientError',()=>{});try{await new Promise((resolve,reject)=>{this.tls660.once('error',reject);this.tls660.listen(47822,'0.0.0.0',resolve);});return this.secureInfo660(true);}catch(e){this.tls660.close();this.tls660=null;throw e;}}
+ readDevices(){try{const v=JSON.parse(fs.readFileSync(this.file,'utf8'));if(!Array.isArray(v)||v.some(d=>!d||!/^([0-9a-f]{64})$/i.test(d.hash||'')))throw Error('Invalid paired-device store');this.deviceReadError610=false;return v;}catch(error){this.deviceReadError610=error.code!=='ENOENT';return [];}}
+ saveDevices(){const tmp=this.file+'.'+process.pid+'.tmp';fs.writeFileSync(tmp,JSON.stringify(this.devices,null,2),{mode:0o600});fs.renameSync(tmp,this.file);this.deviceReadError610=false;}
+ code(){return crypto.randomBytes(4).toString('hex').toUpperCase();}
+ rotateCode(){this.pairCode=this.code();this.pairUntil=Date.now()+10*60*1000;}
+ persist610(){const t=this.settingsFile610+'.tmp';fs.writeFileSync(t,JSON.stringify(this.settings610),{mode:0o600});fs.renameSync(t,this.settingsFile610);}
+ async start(){this.settings610.autoStart=true;this.persist610();if(this.server?.listening){this.rotateCode();return this.info(true);}this.rotateCode();this.server=http.createServer((req,res)=>this.route(req,res));await new Promise((resolve,reject)=>{this.server.once('error',reject);this.server.listen(this.port,'0.0.0.0',resolve);});this.port=this.server.address().port;return this.info(true);}
+ info(includeCode=false){if(includeCode&&(!this.pairCode||Date.now()>=this.pairUntil))this.rotateCode();const addresses=getLanAddresses();return {enabled:Boolean(this.server?.listening),running:Boolean(this.server?.listening),port:this.port,addresses:addresses.map(ip=>({ip,url:'http://'+ip+':'+this.port+'/mobile'})),pairCode:includeCode?this.pairCode:'',pairExpiresAt:includeCode?this.pairUntil:0,pairScope650:this.settings610.pairScope650||'clients-only',paired:this.devices.map(d=>({name:d.name,scope:d.scope,transport650:d.transport650||'legacy',pairedAt:d.pairedAt,lastSeen:d.lastSeen||null,connected610:Date.now()-(this.live610.get(d.hash)||0)<20000})),secure660:this.secureInfo660(includeCode),warning:'التسجيل من Android يحتاج الربط المشفر وPIN المستخدم. العرض متاح كما كان. الربط عبر HTTP داخل الشبكة المحلية؛ استخدم شبكة خاصة موثوقة فقط ولا تشارك رمز الربط.'};}
+ close(disableAuto=true){if(this.tls660){this.tls660.close();this.tls660=null;}if(disableAuto){this.settings610.autoStart=false;this.persist610();}if(this.server){this.server.close();this.server=null;}this.pairCode='';this.pairUntil=0;}
+ revokeAll(){this.devices=[];this.live610.clear();this.saveDevices();if(this.server?.listening)this.rotateCode();return true;}
+ json(res,status,payload,extra={}){const body=Buffer.from(JSON.stringify(payload));res.writeHead(status,{'Content-Type':TYPES['.json'],'Content-Length':body.length,'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",...extra});res.end(body);}
+ async body(req,limit=MAX_BODY){let size=0,chunks=[];for await(const chunk of req){size+=chunk.length;if(size>limit)throw Object.assign(Error('الملف أكبر من الحجم المدعوم'),{status:413});chunks.push(chunk);}try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw Object.assign(Error('بيانات الطلب غير صالحة'),{status:400});}}
+ sameOriginWrite(req,policy={}){const origin=String(req.headers.origin||'');const host=String(req.headers.host||'').toLowerCase();const fetchSite=String(req.headers['sec-fetch-site']||'').toLowerCase();if(fetchSite==='cross-site'||!origin||!host)return false;const allowed=new Set([`127.0.0.1:${this.port}`,`localhost:${this.port}`,`[::1]:${this.port}`,...getLanAddresses().map(ip=>`${ip}:${this.port}`)]);if(policy.remoteTLS){try{const parsed=new URL(origin);return !!req.socket.encrypted&&policy.allowedHosts.has(host)&&parsed.protocol==='https:'&&parsed.host.toLowerCase()===host;}catch{return false;}}if(!allowed.has(host))return false;try{const parsed=new URL(origin);return parsed.protocol==='http:'&&parsed.host.toLowerCase()===host;}catch{return false;}}
+ auth(req,policy={}){if(this.deviceReadError610){this.devices=this.readDevices();if(this.deviceReadError610)return null;}const header=String(req.headers.authorization||''),bearer=header.startsWith('Bearer ')?header.slice(7):'',cookie=String(req.headers.cookie||'').split(';').map(x=>x.trim()).find(x=>x.startsWith('AlhamdLan='))||'',token=bearer||cookie.slice('AlhamdLan='.length);if(!token||token.length<32)return null;const hash=crypto.createHash('sha256').update(token).digest('hex'),device=this.devices.find(d=>safeEqual(d.hash,hash));if(!device||device.transport650&&device.transport650!==(policy.remoteTLS?'tls':'lan')&&!(policy.localTLS&&device.transport650==='lan'))return null;this.live610.set(device.hash,Date.now());device.lastSeen=new Date().toISOString();if(Date.now()-this.lastDevicesPersisted>60000){try{this.saveDevices();this.lastDevicesPersisted=Date.now();}catch(error){console.warn('Could not persist paired-device activity:',error.message);}}return device;}
+ async route(req,res,policy={}){try{
+  const address=req.socket.remoteAddress||'';if(policy.remoteTLS&&!req.socket.encrypted){this.json(res,403,{error:'الربط المباشر يحتاج اتصالًا مشفرًا'});return;}if(!policy.remoteTLS&&!isPrivateAddress(address)){this.json(res,403,{error:'الاتصال مسموح من شبكة محلية خاصة فقط.'});return;}
+  const url=new URL(req.url,'http://lan.local');
+  if(['POST','PUT','DELETE'].includes(req.method)&&!this.sameOriginWrite(req,policy)){this.json(res,403,{error:'تم رفض الطلب: يجب أن يأتي من نفس صفحة ربط الهاتف.'});return;}
+  if(req.method==='GET'&&url.pathname==='/api/viewer-info'){this.json(res,200,{app:'alhamd-print',viewerSchema:2,readOnly:true,serverId:this.serverId,transport:policy.remoteTLS?'direct-tls':'local',tlsPort412:policy.remoteTLS?policy.internalPort||47822:0,workspace660:true,securePort660:47822,desktopVersion:require('../package.json').version});return;}
+  if(req.method==='GET'&&url.pathname==='/health'){this.json(res,200,{ok:true});return;}
+  if(req.method==='POST'&&url.pathname==='/api/pair'){if(this.deviceReadError610){this.devices=this.readDevices();if(this.deviceReadError610){this.json(res,503,{error:'تعذر قراءة الربط المحفوظ. لم تُلغَ الأجهزة؛ أعد المحاولة لاحقًا.'});return;}}
+   const ip=address.replace(/^::ffff:/,''),attempt=this.failedPairs.get(ip)||{count:0,until:0};if(attempt.until>Date.now()&&attempt.count>=8){this.json(res,429,{error:'محاولات كثيرة. انتظر دقيقة ثم أعد المحاولة.'});return;}
+   const data=await this.body(req,16*1024);if(Date.now()>(policy.remoteTLS?policy.pair.until:this.pairUntil)||!(policy.remoteTLS?/^[0-9A-F]{24}$/.test(data.code||''):true)||!safeEqual(data.code||'',policy.remoteTLS?policy.pair.code:this.pairCode)){attempt.count++;if(attempt.count>=8)attempt.until=Date.now()+60*1000;this.failedPairs.set(ip,attempt);this.json(res,401,{error:'رمز الربط غير صحيح أو انتهت صلاحيته.'});return;}
+   if(this.devices.length>=64){this.json(res,400,{error:'الحد الأقصى 64 جهازًا؛ ألغِ ربط جهاز قديم أولًا.'});return;}this.failedPairs.delete(ip);if(policy.remoteTLS)policy.consume();else{this.pairCode='';this.pairUntil=0;}const token=crypto.randomBytes(32).toString('base64url');const device={hash:crypto.createHash('sha256').update(token).digest('hex'),name:String(data.name||'هاتف').slice(0,50),scope:this.settings610.pairScope650==='viewer-full'?'viewer-full':'clients-only',transport650:policy.remoteTLS?'tls':'lan',pairedAt:new Date().toISOString(),lastSeen:new Date().toISOString()};this.devices.push(device);this.saveDevices();this.json(res,200,{ok:true,revision:this.store.revision,scope:device.scope,viewerSchema:2,serverId:this.serverId},{'Set-Cookie':'AlhamdLan='+token+'; HttpOnly; SameSite=Strict; Path=/; Max-Age=15552000'+(policy.remoteTLS?'; Secure':'')});return;
+  }
+  if(req.method==='GET'&&(url.pathname==='/mobile'||url.pathname==='/app/index.html')){
+   const file=path.join(this.appDir,'mobile','index.html');res.writeHead(200,{'Content-Type':TYPES['.html'],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'no-referrer','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"});res.end(fs.readFileSync(file));return;
+  }
+  const device=this.auth(req,policy);if(!device&&this.deviceReadError610){this.json(res,503,{error:'تعذر قراءة اعتماد الهواتف مؤقتًا؛ لم يُلغَ الربط.'});return;}if(!device){this.json(res,401,{error:'أُلغي اعتماد هذا الهاتف أو لم يعد محفوظًا على الكمبيوتر. يلزم رمز جديد.',code:'DEVICE_REVOKED',serverId:this.serverId});return;}
+  if(url.pathname.startsWith('/api/workspace660/')){await this.workspace660.handle(req,res,url,device,policy);return;}
+  if(req.method==='GET'&&url.pathname==='/api/notifications660'){if(device.scope!=='viewer-full'){this.json(res,403,{error:'الربط لا يشمل إشعارات كل الأقسام'});return;}const day=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Cairo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());const result=require('./mobile-store-660.cjs').notifications(this.store,url.searchParams.has('since')?url.searchParams.get('since'):null,day);this.json(res,200,{...result,serverId:this.serverId});return;}
+  if(url.pathname==='/api/viewer-state'){
+   if(req.method!=='GET'){this.json(res,403,{error:'تطبيق الهاتف للعرض فقط. تسجيل البيانات وتعديلها وحذفها من الكمبيوتر وحده.'});return;}
+   if(device.scope!=='viewer-full'){this.json(res,403,{error:'هذا الربط مخصص للعملاء فقط. اربط تطبيق Android برمز جديد من الكمبيوتر لعرض جميع الأقسام.'});return;}
+   const since=Number(url.searchParams.get('since'));
+   if(url.searchParams.has('since')&&Number.isInteger(since)&&since===this.store.revision){this.json(res,200,{changed:false,revision:this.store.revision,readOnly:true,schema:2,serverId:this.serverId});return;}
+   if(!this.viewerCache||this.viewerCache.revision!==this.store.revision){const state=this.store.load()||'{}';this.viewerCache=projectViewer(state,this.store.revision);}
+   this.json(res,200,{changed:true,...this.viewerCache,serverId:this.serverId});return;
+  }
+  if(req.method==='GET'&&url.pathname==='/api/state'){
+   const since=Number(url.searchParams.get('since'));
+   if(url.searchParams.has('since')&&Number.isInteger(since)&&since===this.store.revision){this.json(res,200,{changed:false,revision:this.store.revision});return;}
+   const data=project(this.store.load()||'{}',this.store.revision);
+   this.json(res,200,{changed:true,...data});return;
+  }
+  if(req.method==='POST'&&url.pathname==='/api/offline-export'){
+   const input=await this.body(req),password=String(input.passphrase||'');
+   if(password.length<12||password.length>200) {this.json(res,400,{error:'كلمة مرور النسخة الخاصة بالهاتف يجب أن تحتوي 12 رمزاً على الأقل.'});return;}
+   const salt=crypto.randomBytes(16),iv=crypto.randomBytes(12),iterations=200000;
+   const key=crypto.pbkdf2Sync(password,salt,iterations,32,'sha256');
+   const cipher=crypto.createCipheriv('aes-256-gcm',key,iv);
+   const raw=Buffer.from(JSON.stringify(project(this.store.load()||'{}',this.store.revision)),'utf8');
+   const crypt=Buffer.concat([cipher.update(raw),cipher.final(),cipher.getAuthTag()]);
+   this.json(res,200,{magic:'ALHAMD-MOBILE-SEALED-1',iterations,salt:salt.toString('base64'),iv:iv.toString('base64'),ciphertext:crypt.toString('base64')});return;
+  }
+  if(req.method!=='GET'&&url.pathname==='/api/state'||
+    url.pathname==='/api/backup'||url.pathname==='/api/pin-hash'||url.pathname==='/api/pin-verify'){
+   this.json(res,403,{error:'الهاتف للعرض فقط. الإضافة والتعديل والحذف والنسخ الكامل غير مسموحة من الهاتف.'});return;
+  }
+  if(req.method==='DELETE'&&url.pathname==='/api/device'){
+   const data=await this.body(req);if(data.all===true)this.devices=this.devices.filter(x=>x!==device);else this.devices=this.devices.filter(x=>x.hash!==device.hash);this.saveDevices();this.json(res,200,{ok:true});return;
+  }
+  this.json(res,404,{error:'المسار غير موجود'});
+ }catch(e){if(!res.headersSent)this.json(res,e.status||500,{error:e.status?e.message:e.code==='SYNC_CONFLICT'?e.message:'حدث خطأ أثناء تنفيذ الطلب',...(e.code?{code:e.code}:{})});else res.destroy();}}
+}
+module.exports={LanSyncServer,PORT,getLanAddresses,isPrivateAddress};
