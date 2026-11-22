@@ -1,0 +1,35 @@
+.statement-lines th,.statement-lines td{border:1px solid #cbd5e1;padding:6px;vertical-align:top;font-size:11px}
+.statement-lines th{background:#f1f5f9;color:#334155;font-weight:800}
+.statement-lines td.money{white-space:nowrap}
+.stmt-entry{background:#fff;color:#0f172a}
+.statement-detail-area{line-height:1.7}
+
+#resourcePanel p[dir=ltr]{overflow-wrap:anywhere}
+#pdfOptionsModal button:disabled{opacity:.5;cursor:wait}
+#pdfOptionsModal label{font-size:12px;font-weight:600}
+@media print{.statement-lines thead{display:table-header-group}.stmt-entry{break-inside:avoid}.stmt-entry.long-order{break-inside:auto}}
+
+.stmt-row{display:flex;align-items:center;gap:14px;padding:12px;white-space:nowrap;font-size:12px;overflow-x:auto}
+.stmt-desc{flex:1;min-width:100px;max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.stmt-open{border:1px solid currentColor;border-radius:8px;padding:5px 12px;color:#0369a1;font-weight:700}
+.stmt-fold>summary{cursor:pointer;padding:3px 12px;font-size:11px;color:#0369a1;border-top:1px solid #cbd5e1}
+body.dark #stmtCard .stmt-entry{background:#1e293b;color:#e2e8f0}
+body.dark .stmt-open,body.dark .stmt-fold>summary{color:#7dd3fc}
+body.dark .statement-lines th{background:#162032;color:#e2e8f0}
+body.dark #resourcePanel,body.dark #cleanupSettingsCard{color:#e2e8f0}
+body.dark #cleanupSettingsCard h3{color:#fcd34d}
+@media print{.stmt-row{white-space:normal;overflow:visible;flex-wrap:wrap}.stmt-desc{max-width:none}.stmt-fold:not([open]){display:none}body.dark #stmtCard .stmt-entry{background:white;color:#0f172a}}
+
+.statement-invoice-preview{color:#0f172a!important;background:white!important;position:relative!important;isolation:isolate}
+.statement-invoice-preview>[data-preview-id="invWatermark"]{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:0;overflow:hidden}
+.statement-invoice-preview>:not([data-preview-id="invWatermark"]){position:relative;z-index:1}
+#statementDocumentPreview#statementDocumentPreview#statementDocumentPreview .statement-invoice-preview *{background-color:transparent!important;background-image:none!important;color:inherit}
+#statementDocumentPreview#statementDocumentPreview#statementDocumentPreview .statement-invoice-preview input{color:#0f172a!important}
+#statementDocumentPreview#statementDocumentPreview#statementDocumentPreview .statement-invoice-preview .inv-accent-bg{border:1px solid currentColor;color:var(--inv-accent)!important}
+#statementDocumentPreview#statementDocumentPreview#statementDocumentPreview .statement-invoice-preview th,#statementDocumentPreview#statementDocumentPreview#statementDocumentPreview .statement-invoice-preview td{border:1px solid #cbd5e1}
+
+#statementDocumentPreview#statementDocumentPreview#statementDocumentPreview .statement-invoice-preview [class]{color:#0f172a!important}
+#statementDocumentPreview#statementDocumentPreview#statementDocumentPreview .statement-invoice-preview .stmt-bal-amt.text-rose-600{color:#e11d48!important}
+#statementDocumentPreview#statementDocumentPreview#statementDocumentPreview .statement-invoice-preview .stmt-bal-amt.text-emerald-600{color:#059669!important}
+#statementDocumentPreview#statementDocumentPreview#statementDocumentPreview .statement-invoice-preview .inv-accent-bg{color:var(--inv-accent)!important}
+#statementDocumentPreview#statementDocumentPreview#statementDocumentPreview .statement-invoice-preview{background:#fff!important;color:#0f172a!important}
