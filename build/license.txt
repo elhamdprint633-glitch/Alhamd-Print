@@ -1,0 +1,10 @@
+Alhamd Print - Desktop 1.5.9
+Offline print shop management application.
+
+The application stores business data locally in the current Windows account.
+Uninstalling or updating the application does not erase business data.
+Make regular backups on a separate drive. Historical cleanup creates a backup
+before removing selected document details and preserves financial balances.
+
+This installer includes Electron, Chromium, Node.js, SQLite, Font Awesome,
+Tailwind CSS and open-source fonts. Their license notices are included.

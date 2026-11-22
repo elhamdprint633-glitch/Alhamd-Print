@@ -1,0 +1,5 @@
+'use strict';
+const fs=require('node:fs');const magic=Buffer.from('efbeadde4e756c6c736f6674496e7374','hex');const table=Uint32Array.from({length:256},(_,n)=>{for(let i=0;i<8;i++)n=n&1?0xedb88320^(n>>>1):n>>>1;return n>>>0;});
+function crc32(bytes){let c=0xffffffff;for(const b of bytes)c=table[(c^b)&255]^(c>>>8);return (c^0xffffffff)>>>0;}
+function inspect(bytes){let offset=-1;for(let n=512;n+28<=bytes.length;n+=512)if(bytes.subarray(n+4,n+20).equals(magic)){offset=n;break;}if(offset<0)throw Error('NSIS header missing');const flags=bytes.readUInt32LE(offset),end=offset+bytes.readUInt32LE(offset+24);if(flags&4)throw Error('Installer CRC disabled');if(end>bytes.length||end<offset+32)throw Error('Installer is truncated');const expected=bytes.readUInt32LE(end-4),actual=crc32(bytes.subarray(512,end-4));if(expected!==actual)throw Error('Installer CRC mismatch');return {bytes:bytes.length,nsisEnd:end,crc:actual.toString(16),crcPassed:true};}
+module.exports={crc32,inspect,checkInstaller:file=>inspect(fs.readFileSync(file))};

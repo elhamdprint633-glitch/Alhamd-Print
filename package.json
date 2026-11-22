@@ -1,0 +1,93 @@
+{
+  "name": "alhamd-print-desktop",
+  "version": "7.0.2",
+  "description": "Offline print shop management and accounting",
+  "main": "app/main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/*.cjs",
+    "dist": "node build/build-windows.cjs",
+    "css": "tailwindcss -i input.css -o app/assets/tailwind.css --minify"
+  },
+  "keywords": [],
+  "author": "Alhamd Print",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@fontsource/almarai": "5.3.0",
+    "@fontsource/amiri": "5.3.0",
+    "@fontsource/cairo": "5.3.0",
+    "@fontsource/tajawal": "5.3.0",
+    "@fortawesome/fontawesome-free": "6.7.2",
+    "electron": "45.2.3",
+    "electron-builder": "26.18.0",
+    "pdfjs-dist": "6.5.438",
+    "resedit": "3.1.0",
+    "tailwindcss": "3.4.19"
+  },
+  "build": {
+    "appId": "eg.alhamd.print.desktop",
+    "productName": "Alhamd Print",
+    "asar": true,
+    "files": [
+      "app/**/*",
+      "package.json"
+    ],
+    "afterPack": "build/after-pack.cjs",
+    "directories": {
+      "output": "dist-v7.0.2",
+      "buildResources": "build"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "executableName": "Alhamd Print"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "الحمد برنت",
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "Alhamd-Print-Setup-7.0.2.exe",
+      "language": "1033",
+      "displayLanguageSelector": false,
+      "runAfterFinish": true,
+      "installerLanguages": [
+        "en_US"
+      ],
+      "license": "build/license.txt",
+      "differentialPackage": false
+    },
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true,
+      "grantFileProtocolExtraPrivileges": false
+    },
+    "electronLanguages": [
+      "ar",
+      "en-US"
+    ],
+    "artifactName": "Alhamd-Print-Setup-7.0.2.${ext}"
+  },
+  "overrides": {
+    "minimatch@>=7 <11.0.1": "11.0.1"
+  }
+}
