@@ -1,0 +1,3 @@
+const test=require('node:test'),assert=require('node:assert/strict'),{dimensions,paperCSS}=require('../app/pdf-service.cjs');
+test('A5 landscape and custom sizes use millimetres and preserve orientation',()=>{assert.deepEqual(dimensions({paper:'A5',orientation:'landscape'}),{width:210,height:148,margin:10,scale:1});assert.deepEqual(dimensions({paper:'custom',width:180,height:240,margin:8,scale:90}),{width:180,height:240,margin:8,scale:.9});assert(paperCSS(dimensions({paper:'A4'})).includes('size:210mm 297mm'));});
+test('invalid page dimensions, margins and scale are rejected',()=>{for(const options of [{paper:'custom',width:10,height:100},{margin:Infinity},{margin:41},{scale:200},{paper:'custom',width:80,height:80,margin:40}])assert.throws(()=>dimensions(options));});

@@ -1,0 +1,3 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),{inspect,crc32}=require('../build/check-installer.cjs');
+function fixture(){const b=Buffer.alloc(1400);Buffer.from('efbeadde4e756c6c736f6674496e7374','hex').copy(b,1028);b.writeUInt32LE(b.length-1024,1048);b.writeUInt32LE(crc32(b.subarray(512,b.length-4)),b.length-4);return b;}
+test('installer verifier rejects truncation and damaged download without disabling CRC',()=>{const b=fixture();assert.equal(inspect(b).crcPassed,true);assert.throws(()=>inspect(b.subarray(0,b.length-1)),/truncated/);b[1300]=5;assert.throws(()=>inspect(b),/mismatch/);const noCRC=fixture();noCRC.writeUInt32LE(4,1024);assert.throws(()=>inspect(noCRC),/disabled/);});

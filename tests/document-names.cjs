@@ -1,0 +1,2 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),{safeTitle}=require('../app/document-names.js');
+test('PDF titles preserve Arabic customer names and sanitize forbidden file characters',()=>{assert.equal(safeTitle('أحمد محمد'),'أحمد محمد');assert.equal(safeTitle('شركة: الحمد/برنت'),'شركة_ الحمد_برنت');assert.equal(safeTitle('CON'),'_CON');assert.equal(safeTitle(' . '),'مستند');assert.equal(safeTitle('عميل... '),'عميل');});
