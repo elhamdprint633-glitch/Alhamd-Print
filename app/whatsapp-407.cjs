@@ -1,0 +1,3 @@
+'use strict';
+async function open(shell,normalize,payload){const phone=normalize(payload?.phone);if(!phone)throw Error('رقم هاتف غير صالح');const text=String(payload?.text||'').slice(0,1500),url=new URL(payload?.mode==='web'?'https://web.whatsapp.com/send':'whatsapp://send');url.searchParams.set('phone',phone);if(text)url.searchParams.set('text',text);try{await shell.openExternal(url.href);}catch{const web=new URL('https://web.whatsapp.com/send');web.searchParams.set('phone',phone);if(text)web.searchParams.set('text',text);await shell.openExternal(web.href);}return {ok:true,phone};}
+module.exports={open};

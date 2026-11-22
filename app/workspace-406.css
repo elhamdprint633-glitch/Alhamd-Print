@@ -1,0 +1,11 @@
+/* Keep the original live clock/calendar visible in the desktop header. */
+body.workspace405 main>header>#hdrClock#hdrClock{display:inline-flex!important;order:1!important;flex:0 0 auto!important;max-width:230px!important;min-height:30px!important;margin:0!important;padding:6px 9px!important;border-radius:10px;align-items:center!important}
+body.workspace405 main>header{flex-wrap:wrap!important}
+body.workspace405 main>header>#headerTitleGroup163#headerTitleGroup163{min-width:140px!important;flex:1 1 140px!important}
+body.workspace405 #hdrClockTime{font-variant-numeric:tabular-nums}
+@media(max-width:1100px){body.workspace405 main>header>#hdrClock#hdrClock{margin-inline-start:auto!important}body.workspace405 #hdrClockDate{font-size:10px!important}}
+#printArea [data-col=notes],#printArea [data-col=spec]{white-space:pre-line;overflow-wrap:anywhere;min-width:80px}
+@media print{body.workspace405 main>header>#hdrClock#hdrClock{display:none!important}}
+
+body.workspace405 #topHeaderActions163{order:2!important}
+@media(max-width:1100px){body.workspace405 #topHeaderActions163{flex:1 1 100%!important;justify-content:space-between}}
